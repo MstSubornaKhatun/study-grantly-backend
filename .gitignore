@@ -1,3 +1,5 @@
 node_modules
 .env
 .vercel
+# reachek
+firebase-admin-key.json

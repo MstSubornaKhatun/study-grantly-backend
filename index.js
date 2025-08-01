@@ -20,6 +20,9 @@ app.use(express.json());
 
 
 
+
+
+
 const decodedKey = Buffer.from(process.env.FB_SERVICE_KEY, 'base64').toString('utf8');
 const serviceAccount = JSON.parse(decodedKey);
 // const serviceAccount = require("./firebase-admin-key.json");
@@ -27,6 +30,8 @@ const serviceAccount = JSON.parse(decodedKey);
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount)
 });
+
+// module.exports = admin;
 // Mongo URI
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.honlggm.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
@@ -127,6 +132,14 @@ app.get('/users', verifyFBToken, async (req, res) => {
   } catch (error) {
     res.status(500).send({ error: 'Internal server error' });
   }
+});
+
+// GET /users/:email
+app.get('/users/:email', async (req, res) => {
+  const email = req.params.email.toLowerCase();
+  const user = await usersCollection.findOne({ email });
+  if (!user) return res.status(404).send({ message: 'User not found' });
+  res.send(user);
 });
 
 
@@ -359,11 +372,15 @@ app.patch('/applications/status/:id', async (req, res) => {
 
 
 
-    //  Create Review
-    app.post('/reviews', async (req, res) => {
-       const data = req.body; 
-      const result = await reviewCollection.insertOne(data); 
-      res.send(result); });
+// Create Review
+app.post('/reviews', async (req, res) => {
+  const data = req.body;
+  data.reviewDate = new Date().toISOString();  // এখানে ডেট সেট করো
+  const result = await reviewCollection.insertOne(data);
+  res.send(result);
+});
+
+
 
     //  Get All Reviews 
     app.get('/reviews', verifyFBToken, async (req, res) => { 
@@ -496,6 +513,36 @@ app.patch('/applications/status/:id', async (req, res) => {
         res.status(500).send({ message: "Failed to fetch payment history" });
       }
     });
+
+
+
+
+
+
+
+
+
+
+    // In routes/analytics.js or inside your admin routes
+app.get('/analytics', async (req, res) => {
+  try {
+    const totalUsers = await User.countDocuments();
+    const totalScholarships = await Scholarship.countDocuments();
+    const totalApplications = await Application.countDocuments();
+    const totalReviews = await Review.countDocuments();
+    const totalPayments = await Payment.countDocuments();
+
+    res.send({
+      totalUsers,
+      totalScholarships,
+      totalApplications,
+      totalReviews,
+      totalPayments,
+    });
+  } catch (error) {
+    res.status(500).send({ message: "Failed to fetch analytics data" });
+  }
+});
 
 
 
